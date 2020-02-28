@@ -1,0 +1,40 @@
+
+plugins {
+    id 'org.springframework.boot' version '2.2.1.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.8.RELEASE'
+    id 'java'
+}
+
+group = 'io.seldon.mih'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    implementation "org.springframework.boot:spring-boot-starter-webflux"
+    implementation("org.springframework.plugin:spring-plugin-core:1.2.0.RELEASE")
+    implementation("io.springfox:springfox-swagger2:2.9.2")
+    implementation("io.springfox:springfox-swagger-ui:2.9.2")
+    implementation ("com.google.code.gson:gson:2.8.6")
+    //implementation("org.springframework:spring-websocket")
+    //implementation("org.springframework.boot:spring-boot-starter-reactor-netty")
+    implementation( "org.json:json:20171018")
+    implementation ('org.springframework.boot:spring-boot-configuration-processor')
+    implementation("org.springframework.boot:spring-boot-devtools")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    testImplementation('junit:junit:4.13')
+    testCompile('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+
+
+}
+
+test {
+    useJUnitPlatform()
+}
