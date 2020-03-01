@@ -5,7 +5,7 @@ package com.seldon.mih;
 
 
 import com.google.common.base.Predicates;
-import org.springframework.boot.SpringApplication;
+import com.seldon.mih.mr.FileUtil;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
@@ -15,15 +15,28 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
+import java.util.List;
+import java.util.Map;
+
 @SpringBootApplication
 @EnableWebSocket
 @EnableSwagger2
 
 public class App {
 
-    public static void main(String  [] args) {
+    public static void main(String  [] args) throws Exception {
         System.out.println("Seldon Analytics Engine .....");
-        SpringApplication.run(App.class, args);
+       //SpringApplication.run(App.class, args);
+
+        String dPath = "/Users/manigandanm/Documents/workspace/cloudbroker-poc/seldon/src/main/resources/test-docs";
+        List<String> filePaths = FileUtil.getFilePaths(dPath);
+        for(String fp : filePaths) {
+            Map<String, Integer> freqMap = FileUtil.toFrequencyMap(String.format("%s/%s",dPath,fp));
+            //System.out.printf("Frequency of %s \n ", fp);
+            //System.out.println(freqMap);
+            String outFileName = String.format("%s.out.csv",fp);
+            FileUtil.writeHashMapToCsv(String.format("%s/%s",dPath,outFileName),freqMap);
+        }
     }
 
     @Bean
