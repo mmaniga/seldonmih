@@ -1,5 +1,7 @@
 package com.seldon.mih.mr;
 
+import com.seldon.mih.model.TermFrequenceIDF;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -14,45 +16,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.stream.Collectors.toMap;
 
-class TermFrequenceIDF {
-    public String term;
-    public String doc;
-    public Integer count;
-    public Double tf;
-    public Double tfIDF;
 
-    TermFrequenceIDF() {
-
-    }
-    public TermFrequenceIDF(String term, String doc, Integer count, Double tf, Double tfIDF) {
-        this.term = term;
-        this.doc = doc;
-        this.count = count;
-        this.tf = tf;
-        this.tfIDF = tfIDF;
-    }
-
-    @Override
-    public String toString() {
-        return "TermFrequenceIDF{" +
-                "term='" + term + '\'' +
-                ", doc='" + doc + '\'' +
-                ", count=" + count +
-                ", tf=" + tf +
-                ", tfIDF=" + tfIDF +
-                '}';
-    }
-/*
-    @Override
-    public String toString() {
-        return String.format("%s,%s,%d,%f,%f\n",term,doc,count,tf,tfIDF);
-    }
-
-     */
-}
 
 public class FileUtil {
-
 
 
     public static  void toFrequencyCSV(String sourceFile) {
@@ -145,9 +111,6 @@ public class FileUtil {
                 termFrequenceIDF.term = ie.getKey();
                 termFrequenceIDF.count = wordFreqMap.get(termFrequenceIDF.doc).get(termFrequenceIDF.term);
                 termFrequenceIDF.tf = ie.getValue();
-                // termFrequenceIDF.count = ie.getValue().intValue();
-               // termFrequenceIDF.tf = termFrequencyMap.get(termFrequenceIDF.doc).get(termFrequenceIDF.term);
-
                 termFrequenceIDF.tfIDF=termFrequenceIDF.tf*inverseDocumentFrequency.get(termFrequenceIDF.term);
                 tdIDFVector.add(termFrequenceIDF);
             }

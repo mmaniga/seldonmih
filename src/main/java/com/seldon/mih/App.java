@@ -5,6 +5,7 @@ package com.seldon.mih;
 
 
 import com.google.common.base.Predicates;
+import com.seldon.mih.model.TermFrequenceIDF;
 import com.seldon.mih.mr.FileUtil;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +15,8 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+import java.io.FileWriter;
 
 @SpringBootApplication
 @EnableWebSocket
@@ -27,21 +30,17 @@ public class App {
 
         String dPath = "/Users/manigandanm/Documents/workspace/cloudbroker-poc/seldon/src/main/resources/test-docs";
         FileUtil.toFrequencyMap(dPath);
-        //List<String> filePaths = FileUtil.getFilePaths(dPath);
-        //for(String fp : filePaths) {
-
-            //Map<String, Integer> freqMap = FileUtil.toFrequencyMap(String.format("%s/%s",dPath,fp));
-            //Map<String, Double> freqMap = FileUtil.toTFMap(String.format("%s/%s",dPath,fp));
-            //System.out.printf("Frequency of %s \n ", fp);
-            //System.out.println(freqMap);
-            //String outFileName = String.format("%s.out.csv",fp);
-            //FileUtil.writeHashMapToCsv(String.format("%s/%s",dPath,outFileName),freqMap);
-        //}
         System.out.println(FileUtil.wordFreqMap);
         System.out.println(FileUtil.termFrequencyMap);
         System.out.println(FileUtil.docFreqMap);
         System.out.println(FileUtil.inverseDocumentFrequency);
         System.out.println(FileUtil.tdIDFVector);
+
+        System.out.println("Writiing to output file");
+        FileWriter fileWriter = new FileWriter("/tmp/seldon-tfidf.csv",true);
+        for (TermFrequenceIDF entry : FileUtil.tdIDFVector)
+            fileWriter.write(String.format("%s,%s,%d,%f,%f\n",entry.term,entry.doc,entry.count,entry.tf,entry.tfIDF));
+        fileWriter.close();
     }
 
     @Bean
