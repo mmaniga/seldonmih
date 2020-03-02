@@ -31,7 +31,8 @@ public class App {
         String dPath = "/Users/manigandanm/Documents/workspace/cloudbroker-poc/seldon/src/main/resources/test-docs";
         List<String> filePaths = FileUtil.getFilePaths(dPath);
         for(String fp : filePaths) {
-            Map<String, Integer> freqMap = FileUtil.toFrequencyMap(String.format("%s/%s",dPath,fp));
+            //Map<String, Integer> freqMap = FileUtil.toFrequencyMap(String.format("%s/%s",dPath,fp));
+            Map<String, Double> freqMap = FileUtil.toTFMap(String.format("%s/%s",dPath,fp));
             //System.out.printf("Frequency of %s \n ", fp);
             //System.out.println(freqMap);
             String outFileName = String.format("%s.out.csv",fp);

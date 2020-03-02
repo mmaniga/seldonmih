@@ -20,9 +20,9 @@ public class FileUtil {
         System.out.println(path.getFileName());
     }
 
-    public static void writeHashMapToCsv(String filePath, Map<String, Integer> freqMap) throws Exception {
+    public static void writeHashMapToCsv(String filePath, Map<String, Double> freqMap) throws Exception {
         FileWriter fileWriter = new FileWriter(filePath,true);
-        for (Map.Entry<String, Integer> entry : freqMap.entrySet())
+        for (Map.Entry<String, Double> entry : freqMap.entrySet())
             fileWriter.write(String.format("%s,%s\n",entry.getKey(),entry.getValue()));
         fileWriter.close();
     }
@@ -62,17 +62,21 @@ public class FileUtil {
         return lines.get();
     }
 
+    public static Map<String, Double> toTFMap(String filePath) throws  IOException {
+        Map<String,Integer> fqMap = toFrequencyMap(filePath);
+        return fqMap.entrySet().stream().collect(toMap(e -> e.getKey(),e -> e.getValue().doubleValue()/fqMap.size()));
+    }
 
-    public static Map<String,Integer> toTermFrequencyMap(String filePath) throws IOException {
+    public static Map<String,Double> toTermFrequencyMap(String filePath) throws IOException {
         int noOfWordsInDoc = countOfLinesInFile(filePath);
         Path path = Paths.get(filePath);
-        Map<String, Integer> wordCount = Files.lines(path)
-                .flatMap(line -> Collections.)
-                .map(word -> new AbstractMap.SimpleEntry<>(word, 1))
-                .collect(toMap(e -> e.getKey(), e -> e.getValue(), (v1, v2) -> v1 + v2));
+        Map<String, Double> wordCount = Files.lines(path)
+                .map(str -> str.split(","))
+                .collect(toMap(str -> str[0],str-> Integer.getInteger(str[1]).doubleValue() / noOfWordsInDoc));
 
         return wordCount;
     }
+
     public static void printFrequency(Map<String,Integer> wordCount) {
         wordCount.forEach((k, v) -> System.out.println(String.format("%s ==>> %d", k, v)));
     }
