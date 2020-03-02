@@ -15,9 +15,6 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import java.util.List;
-import java.util.Map;
-
 @SpringBootApplication
 @EnableWebSocket
 @EnableSwagger2
@@ -29,15 +26,22 @@ public class App {
        //SpringApplication.run(App.class, args);
 
         String dPath = "/Users/manigandanm/Documents/workspace/cloudbroker-poc/seldon/src/main/resources/test-docs";
-        List<String> filePaths = FileUtil.getFilePaths(dPath);
-        for(String fp : filePaths) {
+        FileUtil.toFrequencyMap(dPath);
+        //List<String> filePaths = FileUtil.getFilePaths(dPath);
+        //for(String fp : filePaths) {
+
             //Map<String, Integer> freqMap = FileUtil.toFrequencyMap(String.format("%s/%s",dPath,fp));
-            Map<String, Double> freqMap = FileUtil.toTFMap(String.format("%s/%s",dPath,fp));
+            //Map<String, Double> freqMap = FileUtil.toTFMap(String.format("%s/%s",dPath,fp));
             //System.out.printf("Frequency of %s \n ", fp);
             //System.out.println(freqMap);
-            String outFileName = String.format("%s.out.csv",fp);
-            FileUtil.writeHashMapToCsv(String.format("%s/%s",dPath,outFileName),freqMap);
-        }
+            //String outFileName = String.format("%s.out.csv",fp);
+            //FileUtil.writeHashMapToCsv(String.format("%s/%s",dPath,outFileName),freqMap);
+        //}
+        System.out.println(FileUtil.wordFreqMap);
+        System.out.println(FileUtil.termFrequencyMap);
+        System.out.println(FileUtil.docFreqMap);
+        System.out.println(FileUtil.inverseDocumentFrequency);
+        System.out.println(FileUtil.tdIDFVector);
     }
 
     @Bean

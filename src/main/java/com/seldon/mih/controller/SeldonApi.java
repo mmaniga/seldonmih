@@ -25,7 +25,7 @@ public class SeldonApi {
         Map<String,Integer> wordCount = new HashMap<>();
         System.out.println("SeldonApi.TransportMessageToCS");
         try {
-           wordCount = FileUtil.toFrequencyMap("/Users/manigandanm/Documents/workspace/cloudbroker-poc/seldon/src/main/resources/test-docs/doc1.txt");
+           FileUtil.toFrequencyMap("/Users/manigandanm/Documents/workspace/cloudbroker-poc/seldon/src/main/resources/test-docs/doc1.txt");
         } catch (IOException e) {
             e.printStackTrace();
         }
