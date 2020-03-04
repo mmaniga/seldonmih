@@ -1,12 +1,10 @@
 package com.seldon.mih.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.seldon.mih.mr.FileUtil;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,11 +22,7 @@ public class SeldonApi {
             @RequestHeader Map<String, String> headers){
         Map<String,Integer> wordCount = new HashMap<>();
         System.out.println("SeldonApi.TransportMessageToCS");
-        try {
-           FileUtil.toFrequencyMap("/Users/manigandanm/Documents/workspace/cloudbroker-poc/seldon/src/main/resources/test-docs/doc1.txt");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
         return wordCount;
     }
 }
