@@ -23,14 +23,17 @@ public class App {
 
     public static void main(String  [] args) throws Exception {
         System.out.println("Seldon Analytics Engine .....");
-       //SpringApplication.run(App.class, args);
+       // SpringApplication.run(App.class, args);
 
         TfIdf tfIdf = new TfIdf();
-       // tfIdf.compute("/Users/manigandanm/Documents/test-docs");
-       // tfIdf.toCSV("/tmp/seldon-tfidf.csv");
 
-        tfIdf.compute("/Users/manigandanm/Documents/blogs");
-        tfIdf.toCSV("/tmp/seldon-project-blogs.csv");
+        tfIdf.compute("/Users/manigandanm/Documents/test-docs");
+        tfIdf.toCSV("/tmp");
+        //tfIdf.compute("/Users/manigandanm/Documents/test-docs");
+        //tfIdf.toCSV("/tmp/seldon-tfidf.csv");
+
+        //tfIdf.compute("/Users/manigandanm/Documents/blogs");
+        //tfIdf.toCSV("/tmp/seldon-project-blogs.csv");
     }
 
     @Bean

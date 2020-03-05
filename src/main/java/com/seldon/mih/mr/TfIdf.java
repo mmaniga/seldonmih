@@ -20,7 +20,35 @@ import static java.util.stream.Collectors.toMap;
 @Component
 public class TfIdf {
 
+    final class DocEntry<K, V> implements Map.Entry<K, V> {
+        private final K key;
+        private V value;
+
+        public DocEntry(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public K getKey() {
+            return key;
+        }
+
+        @Override
+        public V getValue() {
+            return value;
+        }
+
+        @Override
+        public V setValue(V value) {
+            V old = this.value;
+            this.value = value;
+            return old;
+        }
+    }
+
     private List<TermFrequenceIDF> termFrequenceIDFS; // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
+    private Map<String,List<Map.Entry<String,Double>>> term2docMap;
 
     static String[] stopWords = {
             "I", "me", "my",
@@ -50,14 +78,43 @@ public class TfIdf {
         return wordFrequency.entrySet().stream().collect(toMap(e -> e.getKey(), e -> e.getValue().doubleValue() / wordFrequency.size()));
     }
 
-    public void compute(String dirPath) throws IOException {
+    private void generateData(Map<String, Map<String, Double>> termFrequencyMap,
+                              Map<String, Map<String, Long>> wordFreqMap,
+                              Map<String, Double> inverseDocumentFrequency ) {
+        // Generate the overall Data we need
+        for (Map.Entry<String, Map<String, Double>> entry : termFrequencyMap.entrySet()) {
+            String doc = entry.getKey();
+            for (Map.Entry<String, Double> ie : entry.getValue().entrySet()) {
 
+                TermFrequenceIDF termFrequenceIDF = new TermFrequenceIDF();
+                termFrequenceIDF.doc = doc;
+                termFrequenceIDF.term = ie.getKey();
+                termFrequenceIDF.count = wordFreqMap.get(termFrequenceIDF.doc).get(termFrequenceIDF.term);
+                termFrequenceIDF.tf = ie.getValue();
+                termFrequenceIDF.tfIDF = termFrequenceIDF.tf * inverseDocumentFrequency.get(termFrequenceIDF.term);
+                termFrequenceIDFS.add(termFrequenceIDF);
+                DocEntry docEntry = new DocEntry(termFrequenceIDF.doc,termFrequenceIDF.tfIDF);
+                if(term2docMap.containsKey(termFrequenceIDF.term)) {
+                    term2docMap.get(termFrequenceIDF.term).add(docEntry);
+                } else {
+                    List<Map.Entry<String,Double>> d = new ArrayList<>();
+                    d.add(docEntry);
+                    term2docMap.put(termFrequenceIDF.term,d);
+                }
+
+            }
+        }
+    }
+
+    public void compute(String dirPath) throws IOException {
 
         Map<String, Integer> docFreqMap = new ConcurrentHashMap<>(); // count of words in the document space
         Map<String, Map<String, Long>> wordFreqMap = new ConcurrentHashMap<>(); // For each doc have a word frequency map
         Map<String, Map<String, Double>> termFrequencyMap = new ConcurrentHashMap<>(); // For each doc have a TF that is , Frequency of word / total number of words
         termFrequenceIDFS = new ArrayList<>(); // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
+        term2docMap = new ConcurrentHashMap<>();
 
+        System.out.println(dirPath);
         List<String> filePaths = getFilePaths(dirPath);
 
         for (String fp : filePaths) {
@@ -81,22 +138,8 @@ public class TfIdf {
         Map<String, Double> inverseDocumentFrequency = docFreqMap.entrySet().stream()
                 .collect(toMap(e -> e.getKey(), e -> (Math.log(totalNoOfDocs / 1 + e.getValue()))));
 
-        // Generate the overall Data we need
-        for (Map.Entry<String, Map<String, Double>> entry : termFrequencyMap.entrySet()) {
-            String doc = entry.getKey();
-            for (Map.Entry<String, Double> ie : entry.getValue().entrySet()) {
-                TermFrequenceIDF termFrequenceIDF = new TermFrequenceIDF();
-                termFrequenceIDF.doc = doc;
-                termFrequenceIDF.term = ie.getKey();
-                termFrequenceIDF.count = wordFreqMap.get(termFrequenceIDF.doc).get(termFrequenceIDF.term);
-                termFrequenceIDF.tf = ie.getValue();
-                termFrequenceIDF.tfIDF = termFrequenceIDF.tf * inverseDocumentFrequency.get(termFrequenceIDF.term);
-                termFrequenceIDFS.add(termFrequenceIDF);
-            }
-        }
-
+        generateData(termFrequencyMap,wordFreqMap,inverseDocumentFrequency);
         termFrequenceIDFS.sort((o1, o2) -> Double.compare(o1.tfIDF, o2.tfIDF));
-
         return ;
     }
 
@@ -118,10 +161,21 @@ public class TfIdf {
     }
 
     public void toCSV(String csvFilePath) throws IOException {
-        FileWriter fileWriter = new FileWriter(csvFilePath,true);
+        FileWriter fileWriter = new FileWriter(String.format("%s/%s",csvFilePath,"/tfidf.csv"),true);
         for (TermFrequenceIDF entry : termFrequenceIDFS)
             fileWriter.write(String.format("%s,%s,%d,%f,%f\n",entry.term,entry.doc,entry.count,entry.tf,entry.tfIDF));
         fileWriter.close();
+
+        FileWriter fileWriter2 = new FileWriter(String.format("%s/%s",csvFilePath,"/term2Doc.csv"),true);
+        for (Map.Entry<String, List<Map.Entry<String, Double>>> e : term2docMap.entrySet()) {
+            List<String> s = new ArrayList<>(); // re-facror this nasry one
+            for(Map.Entry<String,Double> x : e.getValue()) {
+                s.add(x.getKey());
+            }
+            fileWriter2.write(String.format("%s,[%s]\n",e.getKey(),s.stream().collect(Collectors.joining(","))));
+        }
+
     }
+
 }
 
