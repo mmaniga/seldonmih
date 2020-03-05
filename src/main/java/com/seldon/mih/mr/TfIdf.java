@@ -36,23 +36,13 @@ public class TfIdf {
     private Set<String> stopWordsSet = new HashSet<>(Arrays.asList(stopWords));
 
 
-    private  Map<String,Integer> getWordFrequency(Path path) throws IOException {
-        return Files.lines(path)
-                .flatMap(line -> Arrays.stream(line.trim().split("\\s+")))
-                .map(word -> word.replaceAll("[^a-zA-Z]", "").toLowerCase().trim())
-                .filter(word -> !stopWordsSet.contains(word))
-                .filter(word -> word.length() > 0)
-                .map(word -> new AbstractMap.SimpleEntry<>(word, 1))
-                .collect(toMap(e -> e.getKey(), e -> e.getValue(), (v1, v2) -> v1 + v2));
-    }
-
-    private Map<String, Long> getWordFreq2(Path path) throws IOException {
+    private Map<String, Long> getWordFrequency(Path path) throws IOException {
         AtomicInteger x = new AtomicInteger();
         return Files.lines(path)
                 .flatMap(line -> Arrays.stream(line.trim().split("\\s+")))
+                .filter(word -> word.length() > 1)
                 .map(word -> word.replaceAll("[^a-zA-Z]", "").toLowerCase().trim())
                 .filter(word -> !stopWordsSet.contains(word))
-                .filter(word -> word.length() > 0)
                 .collect(Collectors.groupingBy(Function.identity(),Collectors.counting()));
     }
 
@@ -74,7 +64,7 @@ public class TfIdf {
             Path path = Paths.get(String.format("%s/%s", dirPath, fp));
             String documentName = path.getFileName().toString();
 
-            Map<String, Long> wordFrequency = getWordFreq2(path);
+            Map<String, Long> wordFrequency = getWordFrequency(path);
             wordFreqMap.put(documentName, wordFrequency);
             termFrequencyMap.put(documentName, getTermFrequency(wordFrequency));
 

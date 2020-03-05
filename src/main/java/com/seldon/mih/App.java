@@ -29,8 +29,8 @@ public class App {
        // tfIdf.compute("/Users/manigandanm/Documents/test-docs");
        // tfIdf.toCSV("/tmp/seldon-tfidf.csv");
 
-        tfIdf.compute("/Users/manigandanm/Documents/project-gutenbergs-top-20-books");
-        tfIdf.toCSV("/tmp/seldon-project-gutenburg.csv");
+        tfIdf.compute("/Users/manigandanm/Documents/blogs");
+        tfIdf.toCSV("/tmp/seldon-project-blogs.csv");
     }
 
     @Bean
