@@ -17,7 +17,7 @@ public class SeldonApi {
 
     @PostMapping("/getTopMIH")
     @ApiOperation("Get Top 10 Words List")
-    public Map<String, Integer> GetTopMIT(
+    public Map<String, Integer> getTopMIT(
             @RequestBody String requestBody,
             @RequestHeader Map<String, String> headers) {
         Map<String, Integer> wordCount = new HashMap<>();
