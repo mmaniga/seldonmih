@@ -30,12 +30,12 @@ public class TfIdf {
             "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can",
             "will", "just", "don", "should", "now",
     };
-    private List<TermFrequenceIDF> termFrequenceIDFS; // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
-    private Map<String, List<Map.Entry<String, Double>>> term2docMap;
     private Set<String> stopWordsSet = new HashSet<>(Arrays.asList(stopWords));
 
+    private List<TermFrequenceIDF> tfIDF; // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
+    private Map<String, List<Map.Entry<String, Double>>> term2docMap;
+
     private Map<String, Long> getWordFrequency(Path path) throws IOException {
-        AtomicInteger x = new AtomicInteger();
         return Files.lines(path)
                 .flatMap(line -> Arrays.stream(line.trim().split("\\s+")))
                 .filter(word -> word.length() > 1)
@@ -44,25 +44,91 @@ public class TfIdf {
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
+
+    public void compute2(String dirPath) throws IOException {
+        System.out.println(dirPath);
+        List<String> filePaths = getFilePaths(dirPath);
+        Map<String, Integer> docFreqMap = new ConcurrentHashMap<>(); // count of words in the document space
+        Map<String, Map<String, Long>> wordFreqMap = new ConcurrentHashMap<>(); // For each doc have a word frequency map
+        Map<String, Map<String, Double>> termFrequencyMap = new ConcurrentHashMap<>(); // For each doc have a TF that is , Frequency of word / total number of words
+        Map<String, Map<String,Double>> sentenceFrequencyMap = new ConcurrentHashMap<>(); // for each sentence in the doc
+
+        for (String fp : filePaths) {
+            Path path = Paths.get(String.format("%s/%s", dirPath, fp));
+            String documentName = path.getFileName().toString();
+
+            // Strip sentence as first step
+            List<String> sentencesList = Files.lines(path)
+                    .flatMap(line -> Arrays.stream(line.trim().split("[!?.:]+")))
+                    .filter(sentence -> sentence.length() > 1)
+                    .collect(Collectors.toList());
+
+            //Computer word frequency for this doc
+            Map<String,Long> wordFrequency = sentencesList.stream().flatMap(line -> Arrays.stream(line.trim().split("\\s+")))
+                    .filter(word -> word.length() > 1)
+                    .map(word -> word.replaceAll("[^a-zA-Z]", "").toLowerCase().trim())
+                    .filter(word -> !stopWordsSet.contains(word))
+                    .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+            // Compute TermFrequency for this doc
+            Map<String, Double> termFrequency = wordFrequency.entrySet().stream()
+                    .collect(toMap(e -> e.getKey(), e -> e.getValue().doubleValue() / wordFrequency.size()));
+
+
+            // Update document frequency
+            wordFrequency.entrySet().stream().peek(e ->
+                    docFreqMap.compute(e.getKey(), (k, v) -> {
+                        if (k != null && v != null) {
+                            return v + 1;
+                        }
+                        return 1;
+                    }));
+
+
+            // Compute Sentence Frequency
+            Map<String, Double> sentenceFrequency = new ConcurrentHashMap<>();
+            for(String sentence : sentencesList) {
+                AtomicInteger validWords = new AtomicInteger(0);
+                double senteceTF = Arrays.stream(sentence.trim().split("\\s+"))
+                        .filter(word -> word.length() > 1)
+                        .map(word -> word.replaceAll("[^a-zA-Z]", "").toLowerCase().trim())
+                        .filter(word -> !stopWordsSet.contains(word))
+                        .peek(e-> validWords.getAndIncrement()) // This is hack
+                        .mapToDouble(f -> termFrequency.get(f)).sum()/validWords.get();
+                sentenceFrequency.put(sentence,senteceTF);
+            }
+
+
+
+            // Final data aggregation
+            wordFreqMap.put(documentName,wordFrequency);
+            termFrequencyMap.put(documentName, termFrequency);
+            sentenceFrequencyMap.put(documentName,sentenceFrequency)
+
+        }
+
+        // Compute IDF
+
+    }
+
     private Map<String, Double> getTermFrequency(Map<String, Long> wordFrequency) {
         return wordFrequency.entrySet().stream().collect(toMap(e -> e.getKey(), e -> e.getValue().doubleValue() / wordFrequency.size()));
     }
 
-    private void generateData(Map<String, Map<String, Double>> termFrequencyMap,
-                              Map<String, Map<String, Long>> wordFreqMap,
-                              Map<String, Double> inverseDocumentFrequency) {
+    private void calculateTfIdf(Map<String, Map<String, Double>> termFrequencyMap,
+                                Map<String, Map<String, Long>> wordFreqMap,
+                                Map<String, Double> inverseDocumentFrequency) {
         // Generate the overall Data we need
         for (Map.Entry<String, Map<String, Double>> entry : termFrequencyMap.entrySet()) {
             String doc = entry.getKey();
             for (Map.Entry<String, Double> ie : entry.getValue().entrySet()) {
-
                 TermFrequenceIDF termFrequenceIDF = new TermFrequenceIDF();
                 termFrequenceIDF.doc = doc;
                 termFrequenceIDF.term = ie.getKey();
                 termFrequenceIDF.count = wordFreqMap.get(termFrequenceIDF.doc).get(termFrequenceIDF.term);
                 termFrequenceIDF.tf = ie.getValue();
                 termFrequenceIDF.tfIDF = termFrequenceIDF.tf * inverseDocumentFrequency.get(termFrequenceIDF.term);
-                termFrequenceIDFS.add(termFrequenceIDF);
+                tfIDF.add(termFrequenceIDF);
                 DocEntry docEntry = new DocEntry(termFrequenceIDF.doc, termFrequenceIDF.tfIDF);
                 if (term2docMap.containsKey(termFrequenceIDF.term)) {
                     term2docMap.get(termFrequenceIDF.term).add(docEntry);
@@ -81,7 +147,7 @@ public class TfIdf {
         Map<String, Integer> docFreqMap = new ConcurrentHashMap<>(); // count of words in the document space
         Map<String, Map<String, Long>> wordFreqMap = new ConcurrentHashMap<>(); // For each doc have a word frequency map
         Map<String, Map<String, Double>> termFrequencyMap = new ConcurrentHashMap<>(); // For each doc have a TF that is , Frequency of word / total number of words
-        termFrequenceIDFS = new ArrayList<>(); // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
+        tfIDF = new ArrayList<>(); // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
         term2docMap = new ConcurrentHashMap<>();
 
         System.out.println(dirPath);
@@ -108,8 +174,8 @@ public class TfIdf {
         Map<String, Double> inverseDocumentFrequency = docFreqMap.entrySet().stream()
                 .collect(toMap(e -> e.getKey(), e -> (Math.log(totalNoOfDocs / 1 + e.getValue()))));
 
-        generateData(termFrequencyMap, wordFreqMap, inverseDocumentFrequency);
-        termFrequenceIDFS.sort((o1, o2) -> Double.compare(o1.tfIDF, o2.tfIDF));
+        calculateTfIdf(termFrequencyMap, wordFreqMap, inverseDocumentFrequency);
+        tfIDF.sort((o1, o2) -> Double.compare(o1.tfIDF, o2.tfIDF));
         return;
     }
 
@@ -131,7 +197,7 @@ public class TfIdf {
 
     public void toCSV(String csvFilePath) throws IOException {
         FileWriter fileWriter = new FileWriter(String.format("%s/%s", csvFilePath, "/tfidf.csv"), true);
-        for (TermFrequenceIDF entry : termFrequenceIDFS)
+        for (TermFrequenceIDF entry : tfIDF)
             fileWriter.write(String.format("%s,%s,%d,%f,%f\n", entry.term, entry.doc, entry.count, entry.tf, entry.tfIDF));
         fileWriter.close();
 
