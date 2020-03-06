@@ -103,7 +103,7 @@ public class TfIdf {
             // Final data aggregation
             wordFreqMap.put(documentName,wordFrequency);
             termFrequencyMap.put(documentName, termFrequency);
-            sentenceFrequencyMap.put(documentName,sentenceFrequency)
+            sentenceFrequencyMap.put(documentName,sentenceFrequency);
 
         }
 
