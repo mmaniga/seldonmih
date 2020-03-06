@@ -21,9 +21,9 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 public class App {
 
-    public static void main(String  [] args) throws Exception {
+    public static void main(String[] args) throws Exception {
         System.out.println("Seldon Analytics Engine .....");
-       // SpringApplication.run(App.class, args);
+        // SpringApplication.run(App.class, args);
 
         TfIdf tfIdf = new TfIdf();
 

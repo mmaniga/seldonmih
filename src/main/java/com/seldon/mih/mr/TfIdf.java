@@ -20,36 +20,6 @@ import static java.util.stream.Collectors.toMap;
 @Component
 public class TfIdf {
 
-    final class DocEntry<K, V> implements Map.Entry<K, V> {
-        private final K key;
-        private V value;
-
-        public DocEntry(K key, V value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public K getKey() {
-            return key;
-        }
-
-        @Override
-        public V getValue() {
-            return value;
-        }
-
-        @Override
-        public V setValue(V value) {
-            V old = this.value;
-            this.value = value;
-            return old;
-        }
-    }
-
-    private List<TermFrequenceIDF> termFrequenceIDFS; // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
-    private Map<String,List<Map.Entry<String,Double>>> term2docMap;
-
     static String[] stopWords = {
             "I", "me", "my",
             "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself",
@@ -60,9 +30,9 @@ public class TfIdf {
             "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can",
             "will", "just", "don", "should", "now",
     };
-
+    private List<TermFrequenceIDF> termFrequenceIDFS; // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
+    private Map<String, List<Map.Entry<String, Double>>> term2docMap;
     private Set<String> stopWordsSet = new HashSet<>(Arrays.asList(stopWords));
-
 
     private Map<String, Long> getWordFrequency(Path path) throws IOException {
         AtomicInteger x = new AtomicInteger();
@@ -71,16 +41,16 @@ public class TfIdf {
                 .filter(word -> word.length() > 1)
                 .map(word -> word.replaceAll("[^a-zA-Z]", "").toLowerCase().trim())
                 .filter(word -> !stopWordsSet.contains(word))
-                .collect(Collectors.groupingBy(Function.identity(),Collectors.counting()));
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     }
 
-    private Map<String, Double> getTermFrequency(Map<String,Long> wordFrequency) {
+    private Map<String, Double> getTermFrequency(Map<String, Long> wordFrequency) {
         return wordFrequency.entrySet().stream().collect(toMap(e -> e.getKey(), e -> e.getValue().doubleValue() / wordFrequency.size()));
     }
 
     private void generateData(Map<String, Map<String, Double>> termFrequencyMap,
                               Map<String, Map<String, Long>> wordFreqMap,
-                              Map<String, Double> inverseDocumentFrequency ) {
+                              Map<String, Double> inverseDocumentFrequency) {
         // Generate the overall Data we need
         for (Map.Entry<String, Map<String, Double>> entry : termFrequencyMap.entrySet()) {
             String doc = entry.getKey();
@@ -93,13 +63,13 @@ public class TfIdf {
                 termFrequenceIDF.tf = ie.getValue();
                 termFrequenceIDF.tfIDF = termFrequenceIDF.tf * inverseDocumentFrequency.get(termFrequenceIDF.term);
                 termFrequenceIDFS.add(termFrequenceIDF);
-                DocEntry docEntry = new DocEntry(termFrequenceIDF.doc,termFrequenceIDF.tfIDF);
-                if(term2docMap.containsKey(termFrequenceIDF.term)) {
+                DocEntry docEntry = new DocEntry(termFrequenceIDF.doc, termFrequenceIDF.tfIDF);
+                if (term2docMap.containsKey(termFrequenceIDF.term)) {
                     term2docMap.get(termFrequenceIDF.term).add(docEntry);
                 } else {
-                    List<Map.Entry<String,Double>> d = new ArrayList<>();
+                    List<Map.Entry<String, Double>> d = new ArrayList<>();
                     d.add(docEntry);
-                    term2docMap.put(termFrequenceIDF.term,d);
+                    term2docMap.put(termFrequenceIDF.term, d);
                 }
 
             }
@@ -138,11 +108,10 @@ public class TfIdf {
         Map<String, Double> inverseDocumentFrequency = docFreqMap.entrySet().stream()
                 .collect(toMap(e -> e.getKey(), e -> (Math.log(totalNoOfDocs / 1 + e.getValue()))));
 
-        generateData(termFrequencyMap,wordFreqMap,inverseDocumentFrequency);
+        generateData(termFrequencyMap, wordFreqMap, inverseDocumentFrequency);
         termFrequenceIDFS.sort((o1, o2) -> Double.compare(o1.tfIDF, o2.tfIDF));
-        return ;
+        return;
     }
-
 
     private List<String> getFilePaths(String dirPath) {
         List<String> fileNames = new ArrayList<>();
@@ -161,20 +130,47 @@ public class TfIdf {
     }
 
     public void toCSV(String csvFilePath) throws IOException {
-        FileWriter fileWriter = new FileWriter(String.format("%s/%s",csvFilePath,"/tfidf.csv"),true);
+        FileWriter fileWriter = new FileWriter(String.format("%s/%s", csvFilePath, "/tfidf.csv"), true);
         for (TermFrequenceIDF entry : termFrequenceIDFS)
-            fileWriter.write(String.format("%s,%s,%d,%f,%f\n",entry.term,entry.doc,entry.count,entry.tf,entry.tfIDF));
+            fileWriter.write(String.format("%s,%s,%d,%f,%f\n", entry.term, entry.doc, entry.count, entry.tf, entry.tfIDF));
         fileWriter.close();
 
-        FileWriter fileWriter2 = new FileWriter(String.format("%s/%s",csvFilePath,"/term2Doc.csv"),true);
+        FileWriter fileWriter2 = new FileWriter(String.format("%s/%s", csvFilePath, "/term2Doc.csv"), true);
         for (Map.Entry<String, List<Map.Entry<String, Double>>> e : term2docMap.entrySet()) {
             List<String> s = new ArrayList<>(); // re-facror this nasry one
-            for(Map.Entry<String,Double> x : e.getValue()) {
+            for (Map.Entry<String, Double> x : e.getValue()) {
                 s.add(x.getKey());
             }
-            fileWriter2.write(String.format("%s,[%s]\n",e.getKey(),s.stream().collect(Collectors.joining(","))));
+            fileWriter2.write(String.format("%s,[%s]\n", e.getKey(), s.stream().collect(Collectors.joining(","))));
         }
 
+    }
+
+    final class DocEntry<K, V> implements Map.Entry<K, V> {
+        private final K key;
+        private V value;
+
+        public DocEntry(K key, V value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public K getKey() {
+            return key;
+        }
+
+        @Override
+        public V getValue() {
+            return value;
+        }
+
+        @Override
+        public V setValue(V value) {
+            V old = this.value;
+            this.value = value;
+            return old;
+        }
     }
 
 }

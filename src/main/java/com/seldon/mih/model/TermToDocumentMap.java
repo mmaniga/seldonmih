@@ -8,7 +8,7 @@ import java.util.Map;
 public class TermToDocumentMap {
     private String term;
     private List<Map.Entry<String, Double>> tfIdList;  // This is a list of documents sorted by tfidf
-   // private Map<String,List<String>> docSentence; // sentences sorted by tfidf derived
+    // private Map<String,List<String>> docSentence; // sentences sorted by tfidf derived
 
 
     public TermToDocumentMap() {
@@ -31,7 +31,7 @@ public class TermToDocumentMap {
         this.tfIdList = tfIdList;
     }
 
-    public void addDocEntry(Map.Entry<String,Double> docEntry) {
+    public void addDocEntry(Map.Entry<String, Double> docEntry) {
         tfIdList.add(docEntry);
     }
 
