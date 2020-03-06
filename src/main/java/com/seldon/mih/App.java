@@ -27,7 +27,7 @@ public class App {
 
         TfIdf tfIdf = new TfIdf();
 
-        tfIdf.compute("/Users/manigandanm/Documents/test-docs");
+        tfIdf.compute2("/Users/manigandanm/Documents/test-docs");
         tfIdf.toCSV("/tmp");
         //tfIdf.compute("/Users/manigandanm/Documents/test-docs");
         //tfIdf.toCSV("/tmp/seldon-tfidf.csv");
