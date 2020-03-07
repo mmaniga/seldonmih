@@ -19,21 +19,29 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableWebSocket
 @EnableSwagger2
 
+/**
+ * Run this as command line application.
+ *  ./gradlew build
+ *   java -jar build/libs/MostImportantHT-0.0.1-SNAPSHOT.jar /Users/manigandanm/Documents/test-docs/ /tmp
+ *
+ *   in my laptop /Users/manigandanm/Documents/test-docs/ is the source path
+ *   /tmp is the destination path
+ *   Run as per configuration in your laptop
+ */
 public class App {
 
     public static void main(String[] args) throws Exception {
         System.out.println("Seldon Analytics Engine .....");
         // SpringApplication.run(App.class, args);
+        System.out.println(args.length);
 
+        if(args.length < 2) {
+            System.out.println(" Missing arguments, source path and destination path required");
+            return;
+        }
         TfIdf tfIdf = new TfIdf();
-
-        tfIdf.compute("/Users/manigandanm/Documents/test-docs");
-        tfIdf.toCSV("/tmp");
-        //tfIdf.compute("/Users/manigandanm/Documents/test-docs");
-        //tfIdf.toCSV("/tmp/seldon-tfidf.csv");
-
-        //tfIdf.compute("/Users/manigandanm/Documents/blogs");
-        //tfIdf.toCSV("/tmp/seldon-project-blogs.csv");
+        tfIdf.compute(args[0]);
+        tfIdf.toCSV(args[1]);
     }
 
     @Bean

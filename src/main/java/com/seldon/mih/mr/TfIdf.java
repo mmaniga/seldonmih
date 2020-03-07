@@ -36,12 +36,14 @@ public class TfIdf {
     private List<TermFrequenceIDF> tfIDF; // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
     private List<SentenceTfIDF> sentenceTfIdfList;
     private Map<String, List<Map.Entry<String, Double>>> term2docMap;
+    private Map<String,List<Map.Entry<String,Double>>> docToSentenceMap; // Doc -> [{sentence,tfIdf},{sentence,tfIdf}...{sentence,tfIdf}]
     private Map<String, List<String>> docSentenceMap ;
 
     public TfIdf() {
         tfIDF = new ArrayList<>(); // TF*IDF , IDF = log(TotalNoOfDocs/NoOfDocsHavingThisWord)
         term2docMap = new ConcurrentHashMap<>();
         docSentenceMap = new ConcurrentHashMap<>();
+        docToSentenceMap = new ConcurrentHashMap<>();
     }
 
     public void compute(String dirPath) throws IOException {
@@ -69,7 +71,6 @@ public class TfIdf {
                         .filter(word -> !stopWordsSet.contains(word))
                         .collect(Collectors.joining(" "));
                 sentencesList.add(ls);
-                System.out.printf("Sentence -> %s \n ",ls);
             }
             docSentenceMap.put(documentName,sentencesList);
 
@@ -153,9 +154,23 @@ public class TfIdf {
                 sentenceTfIDF.sentence = ie.getKey();
                 sentenceTfIDF.tfidf = ie.getValue() * sentenceInverseDocFrequency.get(ie.getKey());
                 sentenceTfIdfList.add(sentenceTfIDF);
+
+                // This code is needs re-factor ..duplicate of tfIdf of term
+                DocEntry docEntry = new DocEntry(sentenceTfIDF.sentence,sentenceTfIDF.tfidf);
+                if(docToSentenceMap.containsKey(sentenceTfIDF.doc)){
+                    docToSentenceMap.get(sentenceTfIDF.doc).add(docEntry);
+                }else {
+                    List<Map.Entry<String, Double>> d = new ArrayList<>();
+                    d.add(docEntry);
+                    docToSentenceMap.put(sentenceTfIDF.doc,d);
+                }
             }
+            docToSentenceMap.get(doc).sort(((o1, o2) -> Double.compare(o1.getValue(),o2.getValue())*-1));
         }
+
+        //Step -12 Sort the list in descending order
         sentenceTfIdfList.sort((o1, o2) -> Double.compare(o1.tfidf,o2.tfidf)*-1); // Hack for descending order - Fix latter
+
     }
 
 
@@ -191,28 +206,40 @@ public class TfIdf {
         List<String> fileNames = new ArrayList<>();
         try {
             DirectoryStream<Path> directoryStream = Files.newDirectoryStream(Paths.get(dirPath));
-            int fileCounter = 0;
             for (Path path : directoryStream) {
                 System.out.println(path.getFileName());
-                fileCounter++;
                 fileNames.add(path.getFileName().toString());
             }
         } catch (IOException ex) {
+            System.out.println(ex);
         }
-        System.out.println("Count: " + fileNames.size() + " files");
+        System.out.printf("%d files processed is  \n",fileNames.size() );
         return fileNames;
     }
 
     public void toCSV(String csvFilePath) throws IOException {
-        FileWriter fileWriter = new FileWriter(String.format("%s/%s", csvFilePath, "/tfidf.csv"), true);
+
+        /**
+         * This is the core model.
+         * Term Frequency of Word * Inverted Document Frequency of the word.
+         * This data is sorted by tfIdf score in descending order.
+         * This is actually the list of most important words in the document space from high to low
+         */
+
+        FileWriter fileWriter = new FileWriter(String.format("%s/%s", csvFilePath, "/tfIdf.csv"), true);
         fileWriter.write(String.format("%s,%s,%s,%s,%s\n", "term", "doc", "count", "tf", "tfIdf"));
         for (TermFrequenceIDF entry : tfIDF)
             fileWriter.write(String.format("%s,%s,%d,%f,%f\n", entry.term, entry.doc, entry.count, entry.tf, entry.tfIDF));
         fileWriter.close();
 
-        FileWriter fileWriter2 = new FileWriter(String.format("%s/%s", csvFilePath, "/term2Doc.csv"), true);
-        fileWriter2.write(String.format("%s,[%s]\n", "doc", "terms"));
 
+        /**
+         * Supporting data for easy lookup.
+         * Given a word/term, this file can help to get the list of documents that has this word.
+         * The list of document is ranked based tfIdf score.
+         */
+        FileWriter fileWriter2 = new FileWriter(String.format("%s/%s", csvFilePath, "/term2Doc.csv"), true);
+        fileWriter2.write(String.format("%s,%s\n", "term", "docs"));
         for (Map.Entry<String, List<Map.Entry<String, Double>>> e : term2docMap.entrySet()) {
             List<String> s = new ArrayList<>(); // re-factor this nasty one
             for (Map.Entry<String, Double> x : e.getValue()) {
@@ -220,11 +247,35 @@ public class TfIdf {
             }
             fileWriter2.write(String.format("%s,[%s]\n", e.getKey(), s.stream().collect(Collectors.joining(","))));
         }
+        fileWriter2.close();
 
-        FileWriter fileWriter3 = new FileWriter(String.format("%s/%s",csvFilePath,"/senternceTfIdf.csv"));
+
+        /**
+         * Supporting document.
+         * This document has sentences (instance of word) ordered by TfIdf. The structure is
+         * {Sentence,Doc,tfIdf}
+         * This means the sentence in top of the document is the most important / relevant sentence
+         * in the entire document space based on TfIdf Calculation
+         */
+        FileWriter fileWriter3 = new FileWriter(String.format("%s/%s",csvFilePath,"/sentenceTfIdf.csv"));
+        fileWriter3.write(String.format("%s,%s,%s\n", "sentence", "doc","tfIdf"));
         for(SentenceTfIDF e  : sentenceTfIdfList)
             fileWriter3.write(String.format("%s,%s,%f\n",e.sentence,e.doc,e.tfidf));
         fileWriter3.close();
+
+        /**
+         * Supporting document.
+         * For each document, have a list of sentence that are sorted by its relevance in global space
+         * The sentence list is sorted by tfIdf score of this sentence.
+         */
+        FileWriter fileWriter4 = new FileWriter(String.format("%s/%s",csvFilePath,"docToSentence.csv"));
+        fileWriter4.write(String.format("%s,%s,%s\n","Doc","Sentence","tfIdf"));
+        for(Map.Entry<String, List<Map.Entry<String, Double>>> e: docToSentenceMap.entrySet()) {
+            for(Map.Entry<String, Double> entries : e.getValue()) {
+                fileWriter4.write(String.format("%s,%s,%f\n",e.getKey(),entries.getKey(),entries.getValue()));
+            }
+        }
+        fileWriter4.close();
 
     }
 
